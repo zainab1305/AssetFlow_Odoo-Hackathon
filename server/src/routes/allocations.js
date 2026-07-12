@@ -194,12 +194,12 @@ router.post('/transfer-request', protect, allowRoles('Admin', 'Asset Manager', '
 });
 
 router.get('/transfer-requests', protect, async (req, res) => {
-  let query = {};
+  let query = { status: 'Pending' }; // Only return pending requests
 
   if (req.user.role === 'Asset Manager' || req.user.role === 'Admin') {
-    // Full access
+    // Full access to pending requests
   } else if (req.user.role === 'Department Head') {
-    // See transfers from/to their department
+    // See pending transfers from/to their department
     const deptHeadUsers = await User.find({ department: req.user.department, _id: { $ne: req.user._id } });
     const deptUserIds = deptHeadUsers.map(u => u._id);
     query.$or = [
@@ -207,7 +207,7 @@ router.get('/transfer-requests', protect, async (req, res) => {
       { toUser: { $in: deptUserIds } },
     ];
   } else if (req.user.role === 'Employee') {
-    // Only see own transfer requests
+    // Only see own pending transfer requests
     query.requestedBy = req.user._id;
   }
 
