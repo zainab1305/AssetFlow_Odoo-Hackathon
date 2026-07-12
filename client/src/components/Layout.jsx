@@ -93,9 +93,6 @@ export const Layout = () => {
                 <h1 className="text-lg font-semibold text-slate-900">AssetFlow control center</h1>
               </div>
               <div className="flex items-center gap-3">
-                <div className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 md:block">
-                  Submission-ready hackathon build
-                </div>
                 <Button variant="outline" className="hidden md:inline-flex">
                   <AlertTriangle className="h-4 w-4" />
                   Alerts
