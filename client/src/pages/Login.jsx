@@ -31,10 +31,6 @@ export default function Login() {
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
       <div className="hidden flex-col justify-between bg-slate-950 p-10 text-white lg:flex">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-cyan-200">
-            <Sparkles className="h-4 w-4" />
-            AssetFlow demo system
-          </div>
           <h1 className="mt-8 max-w-xl text-5xl font-semibold leading-tight">
             Manage assets, bookings, maintenance, and audits from one clean workspace.
           </h1>
