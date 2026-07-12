@@ -585,7 +585,7 @@ const AssetAudit = () => {
                   </div>
                   <div>
                     <p className="text-slate-500">Scope</p>
-                    <p className="font-medium">
+                    <p className="font-medium overflow-hidden text-ellipsis whitespace-nowrap">
                       {selectedCycle.scopeType}: {selectedCycle.scopeValue}
                     </p>
                   </div>
@@ -602,7 +602,7 @@ const AssetAudit = () => {
 
               {/* Checklist Table */}
               <div className="rounded-2xl border border-slate-200 overflow-hidden">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-full table-fixed text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
                       <th className="px-4 py-3 text-left font-semibold text-slate-900">Asset</th>
@@ -617,13 +617,13 @@ const AssetAudit = () => {
                     {cycleDetail.items && cycleDetail.items.length > 0 ? (
                       cycleDetail.items.map((item) => (
                         <tr key={item._id} className="hover:bg-slate-50">
-                          <td className="px-4 py-3 font-medium text-slate-900">{item.asset?.assetId}</td>
-                          <td className="px-4 py-3 text-slate-600">{item.asset?.category}</td>
+                          <td className="px-4 py-3 font-medium text-slate-900 truncate max-w-[140px]">{item.asset?.assetId}</td>
+                          <td className="px-4 py-3 text-slate-600 truncate max-w-[140px]">{item.asset?.category}</td>
                           <td className="px-4 py-3">
                             <StatusPill tone={toneForStatus(item.verificationStatus)}>{item.verificationStatus}</StatusPill>
                           </td>
-                          <td className="px-4 py-3 text-slate-600">{item.verifiedBy?.name || '—'}</td>
-                          <td className="px-4 py-3 text-slate-600 truncate">{item.remarks || '—'}</td>
+                          <td className="px-4 py-3 text-slate-600 truncate max-w-[180px]">{item.verifiedBy?.name || '—'}</td>
+                          <td className="px-4 py-3 text-slate-600 truncate max-w-[220px]">{item.remarks || '—'}</td>
                           {canManageAuditAssets() && (
                             <td className="px-4 py-3">
                               <Button variant="outline" onClick={() => openEditAssetModal(item)}>
