@@ -5,6 +5,7 @@ import {
   Button, EmptyState, Field, Input, Select, StatusPill, Textarea,
   Modal, Checkbox, FileUpload, Spinner, Toast, ConfirmDialog,
 } from '../components/UI';
+import { useAuth } from '../context/AuthContext';
 
 /* ─── status helpers ─── */
 const STATUS_OPTIONS = ['Available', 'Allocated', 'Reserved', 'Under Maintenance', 'Lost', 'Retired', 'Disposed'];
@@ -78,6 +79,9 @@ export default function Assets() {
   // toast / confirm
   const [toast, setToast] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const { user } = useAuth();
+  const canManage = user?.role === 'Asset Manager' || user?.role === 'Admin';
 
   /* ──── data loading ──── */
   const buildQuery = useCallback(() => {
@@ -268,18 +272,20 @@ export default function Assets() {
             className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
           />
         </div>
-        <Button
-          variant="accent"
-          className="shrink-0"
-          onClick={() => {
-            setForm({ ...emptyForm, category: categories[0]?._id || '' });
-            setFormErrors({});
-            setRegisterOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Register Asset
-        </Button>
+        {canManage && (
+          <Button
+            variant="accent"
+            className="shrink-0"
+            onClick={() => {
+              setForm({ ...emptyForm, category: categories[0]?._id || '' });
+              setFormErrors({});
+              setRegisterOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Register Asset
+          </Button>
+        )}
       </div>
 
       {/* ─── Filter pills ─── */}
@@ -341,17 +347,19 @@ export default function Assets() {
               title="No assets found"
               description="Register the first asset or adjust filters."
               action={
-                <Button
-                  variant="accent"
-                  onClick={() => {
-                    setForm({ ...emptyForm, category: categories[0]?._id || '' });
-                    setFormErrors({});
-                    setRegisterOpen(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                  Register Asset
-                </Button>
+                canManage ? (
+                  <Button
+                    variant="accent"
+                    onClick={() => {
+                      setForm({ ...emptyForm, category: categories[0]?._id || '' });
+                      setFormErrors({});
+                      setRegisterOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Register Asset
+                  </Button>
+                ) : null
               }
             />
           </div>
@@ -404,14 +412,16 @@ export default function Assets() {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        <button
-                          type="button"
-                          title="Delete asset"
-                          onClick={() => setConfirmDelete(asset)}
-                          className="rounded-xl p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {canManage && (
+                          <button
+                            type="button"
+                            title="Delete asset"
+                            onClick={() => setConfirmDelete(asset)}
+                            className="rounded-xl p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -674,10 +684,12 @@ export default function Assets() {
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
-              <Button variant="danger" onClick={() => { setConfirmDelete(detailAsset); }}>
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
+              {canManage && (
+                <Button variant="danger" onClick={() => { setConfirmDelete(detailAsset); }}>
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              )}
               <Button variant="secondary" onClick={() => { setDetailOpen(false); setDetailAsset(null); }}>
                 Close
               </Button>
