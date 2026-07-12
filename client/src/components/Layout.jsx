@@ -32,7 +32,7 @@ export const Layout = () => {
   return (
     <div className="min-h-screen bg-hero-radial text-slate-900">
       <div className="flex min-h-screen">
-        <aside className={`fixed inset-y-0 left-0 z-40 w-72 border-r border-slate-200 bg-white/90 shadow-soft backdrop-blur xl:static xl:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 xl:block`}>
+        <aside className={`fixed inset-y-0 left-0 z-40 w-72 border-r border-slate-200 bg-white/90 shadow-soft backdrop-blur xl:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 xl:block`}>
           <div className="flex h-full flex-col">
             <div className="border-b border-slate-200 px-6 py-5">
               <div className="flex items-center gap-3">
@@ -83,7 +83,7 @@ export const Layout = () => {
           </div>
         </aside>
 
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="flex min-h-screen flex-1 flex-col xl:pl-72 min-w-0">
           <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 px-4 py-4 backdrop-blur md:px-6 xl:px-8">
             <div className="flex items-center justify-between gap-4">
               <button className="rounded-2xl border border-slate-200 bg-white p-3 xl:hidden" onClick={() => setOpen((value) => !value)}>
@@ -102,7 +102,7 @@ export const Layout = () => {
             </div>
           </header>
 
-          <main className="flex-1 px-4 py-6 md:px-6 xl:px-8">
+          <main className="flex-1 px-4 py-6 md:px-6 xl:px-8 min-w-0">
             <Outlet />
           </main>
         </div>
