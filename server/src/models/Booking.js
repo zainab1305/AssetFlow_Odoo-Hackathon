@@ -9,7 +9,8 @@ const bookingSchema = new mongoose.Schema(
     startTime: { type: Date, required: true },
     endTime: { type: Date, required: true },
     purpose: { type: String, default: '' },
-    status: { type: String, enum: ['Pending', 'Confirmed', 'Cancelled'], default: 'Confirmed' },
+    status: { type: String, enum: ['Upcoming', 'Ongoing', 'Completed', 'Cancelled'], default: 'Upcoming' },
+    reminderSent: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -67,6 +67,7 @@ export const api = {
   bookings: () => request('/bookings'),
   createBooking: (payload) => request('/bookings', { method: 'POST', body: JSON.stringify(payload) }),
   cancelBooking: (id) => request(`/bookings/${id}/cancel`, { method: 'PATCH' }),
+  rescheduleBooking: (id, payload) => request(`/bookings/${id}/reschedule`, { method: 'PATCH', body: JSON.stringify(payload) }),
   maintenance: () => request('/maintenance'),
   createMaintenance: (payload) => request('/maintenance', { method: 'POST', body: JSON.stringify(payload) }),
   approveMaintenance: (id) => request(`/maintenance/${id}/approve`, { method: 'PATCH' }),

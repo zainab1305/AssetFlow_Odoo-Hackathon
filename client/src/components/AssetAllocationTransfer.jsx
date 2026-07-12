@@ -127,6 +127,10 @@ export default function AssetAllocationTransfer() {
     return assets.filter((asset) => `${asset.assetId} ${asset.name}`.toLowerCase().includes(query));
   }, [assetSearch, assets]);
 
+  const pendingTransferRequests = useMemo(() => {
+    return transferRequests.filter((req) => req.status === 'Pending');
+  }, [transferRequests]);
+
   const createAllocationMutation = useMutation({
     mutationFn: (payload) => api.createAllocation(payload),
     onSuccess: () => {
@@ -369,7 +373,7 @@ export default function AssetAllocationTransfer() {
       ) : (
         <SectionCard title="Transfer requests" subtitle="Approve or reject transfer requests from asset managers and department heads">
           <div className="space-y-3">
-            {transferRequests.length ? transferRequests.map((request) => (
+            {pendingTransferRequests.length ? pendingTransferRequests.map((request) => (
               <div key={request._id} className="rounded-2xl border border-slate-200 p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
