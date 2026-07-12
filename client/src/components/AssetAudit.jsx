@@ -152,7 +152,7 @@ const AssetAudit = () => {
 
   // Helper functions
   const canManageAuditCycles = () => ['Admin', 'Asset Manager'].includes(user?.role);
-  const canManageAuditAssets = () => user?.role === 'Admin';
+  const canManageAuditAssets = () => ['Admin', 'Asset Manager'].includes(user?.role);
   const canViewAllCycles = () => ['Admin', 'Asset Manager'].includes(user?.role);
   const isAuditor = () => user?.role === 'Auditor';
 
