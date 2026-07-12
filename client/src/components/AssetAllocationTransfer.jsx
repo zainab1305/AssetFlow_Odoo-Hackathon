@@ -18,6 +18,12 @@ import {
 
 const canManageAllocation = (role) => ['Admin', 'Asset Manager', 'Department Head'].includes(role);
 
+const canAllocateAssets = (role) => ['Admin', 'Asset Manager', 'Department Head'].includes(role);
+
+const canApproveTransfer = (role) => ['Admin', 'Asset Manager', 'Department Head'].includes(role);
+
+const canApproveReturn = (role) => ['Admin', 'Asset Manager', 'Department Head'].includes(role);
+
 const mapStatus = (status) => (status === 'Pending' ? 'Requested' : status);
 
 const toneForAllocationStatus = (status) => {
@@ -254,9 +260,11 @@ export default function AssetAllocationTransfer() {
         title="Asset allocation and transfer"
         subtitle="Allocate available assets, manage ownership conflicts, and keep release history in sync"
         action={
-          <Button onClick={() => setAllocationOpen(true)}>
-            Allocate asset
-          </Button>
+          canAllocateAssets(user?.role) ? (
+            <Button onClick={() => setAllocationOpen(true)}>
+              Allocate asset
+            </Button>
+          ) : null
         }
       >
         <div className="flex flex-wrap gap-2">
@@ -328,10 +336,16 @@ export default function AssetAllocationTransfer() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <Button variant="outline" onClick={() => { setSelectedAllocation(allocation); setReturnOpen(true); }}>
-                            <RotateCcw className="h-4 w-4" /> Return
+                          <Button 
+                            variant="outline" 
+                            onClick={() => { setSelectedAllocation(allocation); setReturnOpen(true); }}
+                          >
+                            <RotateCcw className="h-4 w-4" /> {user?.role === 'Employee' ? 'Request Return' : 'Mark Returned'}
                           </Button>
-                          <Button variant="secondary" onClick={() => { setSelectedAllocation(allocation); setTransferForm((current) => ({ ...current, assetId: allocation.asset?._id || '' })); setTransferOpen(true); }}>
+                          <Button 
+                            variant="secondary" 
+                            onClick={() => { setSelectedAllocation(allocation); setTransferForm((current) => ({ ...current, assetId: allocation.asset?._id || '' })); setTransferOpen(true); }}
+                          >
                             <ArrowRightLeft className="h-4 w-4" /> Transfer
                           </Button>
                           <Button variant="secondary" onClick={() => openHistory(allocation.asset?._id)}>
@@ -385,88 +399,94 @@ export default function AssetAllocationTransfer() {
       )}
 
       <Modal open={allocationOpen} onClose={() => setAllocationOpen(false)} title="Allocate asset">
-        <form className="grid gap-4" onSubmit={handleAllocationSubmit}>
-          <Field label="Select asset">
-            <Input
-              value={assetSearch}
-              placeholder="Search by asset ID or name"
-              onChange={(event) => setAssetSearch(event.target.value)}
-            />
-            <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-2">
-              <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
-                value={form.assetId}
-                onChange={(event) => {
-                  setForm((current) => ({ ...current, assetId: event.target.value }));
-                  setConflictMessage('');
-                }}
-              >
-                <option value="">Choose an available asset</option>
-                {filteredAssets.map((asset) => (
-                  <option key={asset._id} value={asset._id}>
-                    {asset.assetId} - {asset.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </Field>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Allocate to">
-              <div className="flex rounded-2xl border border-slate-200 p-1">
-                <button
-                  type="button"
-                  className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${form.type === 'Employee' ? 'bg-slate-900 text-white' : 'bg-transparent text-slate-600'}`}
-                  onClick={() => setForm((current) => ({ ...current, type: 'Employee' }))}
+        {!canAllocateAssets(user?.role) ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+            You do not have permission to allocate assets. Only Asset Managers and Department Heads can allocate.
+          </div>
+        ) : (
+          <form className="grid gap-4" onSubmit={handleAllocationSubmit}>
+            <Field label="Select asset">
+              <Input
+                value={assetSearch}
+                placeholder="Search by asset ID or name"
+                onChange={(event) => setAssetSearch(event.target.value)}
+              />
+              <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-2">
+                <select
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
+                  value={form.assetId}
+                  onChange={(event) => {
+                    setForm((current) => ({ ...current, assetId: event.target.value }));
+                    setConflictMessage('');
+                  }}
                 >
-                  Employee
-                </button>
-                <button
-                  type="button"
-                  className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${form.type === 'Department' ? 'bg-slate-900 text-white' : 'bg-transparent text-slate-600'}`}
-                  onClick={() => setForm((current) => ({ ...current, type: 'Department' }))}
-                >
-                  Department
-                </button>
+                  <option value="">Choose an available asset</option>
+                  {filteredAssets.map((asset) => (
+                    <option key={asset._id} value={asset._id}>
+                      {asset.assetId} - {asset.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </Field>
 
-            <Field label={form.type === 'Department' ? 'Department' : 'Employee'}>
-              {form.type === 'Department' ? (
-                <Select value={form.departmentId} onChange={(event) => setForm((current) => ({ ...current, departmentId: event.target.value }))}>
-                  <option value="">Select department</option>
-                  {departments.map((department) => (
-                    <option key={department._id} value={department._id}>{department.name}</option>
-                  ))}
-                </Select>
-              ) : (
-                <Select value={form.allocateeId} onChange={(event) => setForm((current) => ({ ...current, allocateeId: event.target.value }))}>
-                  <option value="">Select employee</option>
-                  {employees.map((employee) => (
-                    <option key={employee._id} value={employee._id}>{employee.name}</option>
-                  ))}
-                </Select>
-              )}
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Allocate to">
+                <div className="flex rounded-2xl border border-slate-200 p-1">
+                  <button
+                    type="button"
+                    className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${form.type === 'Employee' ? 'bg-slate-900 text-white' : 'bg-transparent text-slate-600'}`}
+                    onClick={() => setForm((current) => ({ ...current, type: 'Employee' }))}
+                  >
+                    Employee
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${form.type === 'Department' ? 'bg-slate-900 text-white' : 'bg-transparent text-slate-600'}`}
+                    onClick={() => setForm((current) => ({ ...current, type: 'Department' }))}
+                  >
+                    Department
+                  </button>
+                </div>
+              </Field>
+
+              <Field label={form.type === 'Department' ? 'Department' : 'Employee'}>
+                {form.type === 'Department' ? (
+                  <Select value={form.departmentId} onChange={(event) => setForm((current) => ({ ...current, departmentId: event.target.value }))}>
+                    <option value="">Select department</option>
+                    {departments.map((department) => (
+                      <option key={department._id} value={department._id}>{department.name}</option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Select value={form.allocateeId} onChange={(event) => setForm((current) => ({ ...current, allocateeId: event.target.value }))}>
+                    <option value="">Select employee</option>
+                    {employees.map((employee) => (
+                      <option key={employee._id} value={employee._id}>{employee.name}</option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
+
+            <Field label="Expected return date" helper="Optional">
+              <Input type="date" value={form.expectedReturnDate} onChange={(event) => setForm((current) => ({ ...current, expectedReturnDate: event.target.value }))} />
             </Field>
-          </div>
 
-          <Field label="Expected return date" helper="Optional">
-            <Input type="date" value={form.expectedReturnDate} onChange={(event) => setForm((current) => ({ ...current, expectedReturnDate: event.target.value }))} />
-          </Field>
+            <Field label="Notes">
+              <Textarea rows="4" value={form.remarks} onChange={(event) => setForm((current) => ({ ...current, remarks: event.target.value }))} />
+            </Field>
 
-          <Field label="Notes">
-            <Textarea rows="4" value={form.remarks} onChange={(event) => setForm((current) => ({ ...current, remarks: event.target.value }))} />
-          </Field>
-
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="secondary" onClick={() => setAllocationOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={createAllocationMutation.isPending}>
-              {conflictMessage ? 'Request transfer' : createAllocationMutation.isPending ? 'Allocating...' : 'Allocate asset'}
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="secondary" onClick={() => setAllocationOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createAllocationMutation.isPending}>
+                {conflictMessage ? 'Request transfer' : createAllocationMutation.isPending ? 'Allocating...' : 'Allocate asset'}
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transfer request">
@@ -493,7 +513,7 @@ export default function AssetAllocationTransfer() {
         </form>
       </Modal>
 
-      <Modal open={returnOpen} onClose={() => setReturnOpen(false)} title="Return asset">
+      <Modal open={returnOpen} onClose={() => setReturnOpen(false)} title={user?.role === 'Employee' ? 'Request Asset Return' : 'Approve Asset Return'}>
         <form className="grid gap-4" onSubmit={handleReturnSubmit}>
           <Field label="Condition">
             <Select value={returnForm.condition} onChange={(event) => setReturnForm((current) => ({ ...current, condition: event.target.value }))}>
