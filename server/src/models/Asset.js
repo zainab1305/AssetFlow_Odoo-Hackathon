@@ -10,6 +10,16 @@ const assetHistorySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const documentSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, default: 'file' }, // image, pdf, document
+    uploadedAt: { type: Date, default: Date.now },
+  },
+  { _id: true }
+);
+
 const assetSchema = new mongoose.Schema(
   {
     assetId: { type: String, unique: true },
@@ -25,9 +35,19 @@ const assetSchema = new mongoose.Schema(
     },
     serialNumber: { type: String, default: '' },
     purchaseDate: { type: Date, default: null },
+    acquisitionDate: { type: Date, default: null },
+    acquisitionCost: { type: Number, default: 0 },
+    condition: {
+      type: String,
+      enum: ['Excellent', 'Good', 'Fair', 'Damaged'],
+      default: 'Good',
+    },
+    isBookable: { type: Boolean, default: false },
     imageUrl: { type: String, default: '' },
+    documents: [documentSchema],
     notes: { type: String, default: '' },
     history: [assetHistorySchema],
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -1,9 +1,11 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = API_URL.replace('/api', '');
 
 const request = async (path, options = {}) => {
   const token = localStorage.getItem('assetflow_token');
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
   };
 
@@ -18,7 +20,10 @@ const request = async (path, options = {}) => {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.message || 'Request failed');
+    const error = new Error(data.message || 'Request failed');
+    error.status = response.status;
+    error.field = data.field;
+    throw error;
   }
 
   return data;
@@ -44,8 +49,14 @@ export const api = {
   assetById: (id) => request(`/assets/${id}`),
   saveAsset: (payload) => request('/assets', { method: 'POST', body: JSON.stringify(payload) }),
   updateAsset: (id, payload) => request(`/assets/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteAsset: (id) => request(`/assets/${id}`, { method: 'DELETE' }),
   assetHistory: (id, payload) => request(`/assets/${id}/history`, { method: 'POST', body: JSON.stringify(payload) }),
   assetAllocations: (id) => request(`/assets/${id}/allocations`),
+  uploadFile: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request('/upload', { method: 'POST', body: formData });
+  },
   allocations: () => request('/allocations'),
   createAllocation: (payload) => request('/allocations', { method: 'POST', body: JSON.stringify(payload) }),
   returnAllocation: (id) => request(`/allocations/${id}/return`, { method: 'POST' }),
@@ -69,3 +80,5 @@ export const api = {
   readNotification: (id) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
   readAllNotifications: () => request('/notifications/read-all', { method: 'PATCH' }),
 };
+
+export { BASE_URL };
