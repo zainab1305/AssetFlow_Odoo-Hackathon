@@ -106,6 +106,11 @@ router.patch('/:id/approve', protect, allowRoles('Admin', 'Asset Manager'), asyn
     title: 'Maintenance approved',
     message: `${existing.title} has been approved`,
     type: 'success',
+    category: 'maintenance_approved',
+    module: 'maintenance',
+    assetTag: existing.asset?.assetId || '',
+    triggeredBy: req.user._id,
+    metadata: { requestId: request._id.toString() },
     entityId: request._id.toString(),
   });
 
@@ -224,6 +229,11 @@ router.patch('/:id/resolve', protect, allowRoles('Admin', 'Asset Manager'), asyn
     title: 'Maintenance resolved',
     message: `${existing.title} has been resolved`,
     type: 'success',
+    category: 'system_alert',
+    module: 'maintenance',
+    assetTag: existing.asset?.assetId || '',
+    triggeredBy: req.user._id,
+    metadata: { requestId: request._id.toString() },
     entityId: request._id.toString(),
   });
 

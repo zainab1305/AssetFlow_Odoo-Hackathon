@@ -57,6 +57,11 @@ router.post('/', protect, allowRoles('Admin', 'Asset Manager', 'Department Head'
     title: 'Booking confirmed',
     message: `${resourceName} booked from ${new Date(startTime).toLocaleString()} to ${new Date(endTime).toLocaleString()}`,
     type: 'success',
+    category: 'booking_confirmed',
+    module: 'bookings',
+    assetTag: resourceName,
+    triggeredBy: req.user._id,
+    metadata: { startTime, endTime, purpose },
     entityId: booking._id.toString(),
   });
   res.status(201).json(booking);
@@ -98,6 +103,11 @@ router.patch('/:id/reschedule', protect, allowRoles('Admin', 'Asset Manager', 'D
     title: 'Booking rescheduled',
     message: `${booking.resourceName} was rescheduled`,
     type: 'info',
+    category: 'booking_created',
+    module: 'bookings',
+    assetTag: booking.resourceName,
+    triggeredBy: req.user._id,
+    metadata: { startTime, endTime },
     entityId: booking._id.toString(),
   });
 

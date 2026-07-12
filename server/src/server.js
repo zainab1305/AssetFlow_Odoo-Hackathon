@@ -24,6 +24,9 @@ const startReminderJob = () => {
         title: 'Upcoming booking reminder',
         message: `${booking.resourceName} starts at ${new Date(booking.startTime).toLocaleString()}`,
         type: 'warning',
+        category: 'system_alert',
+        module: 'bookings',
+        assetTag: booking.resourceName,
         entityId: booking._id.toString(),
       });
       booking.reminderSent = true;

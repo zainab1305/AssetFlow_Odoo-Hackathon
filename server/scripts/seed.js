@@ -174,6 +174,10 @@ const seed = async () => {
       title: 'Asset allocated',
       message: 'Dell Latitude 5440 has been allocated to your account',
       type: 'success',
+      category: 'asset_assignment',
+      module: 'allocations',
+      assetTag: 'AF-001',
+      triggeredBy: users[1]._id,
       entityId: assets[0]._id.toString(),
     },
     {
@@ -181,6 +185,10 @@ const seed = async () => {
       title: 'Maintenance approved',
       message: 'Chair wheel replacement approved',
       type: 'warning',
+      category: 'maintenance_approved',
+      module: 'maintenance',
+      assetTag: 'AF-003',
+      triggeredBy: users[1]._id,
       entityId: assets[2]._id.toString(),
     },
   ]);

@@ -101,6 +101,11 @@ router.post('/', protect, async (req, res) => {
     title: 'Asset allocated',
     message: `${asset.assetId} has been assigned to you`,
     type: 'success',
+    category: 'asset_assignment',
+    module: 'allocations',
+    assetTag: asset.assetId,
+    triggeredBy: req.user._id,
+    metadata: { allocatedTo, allocationId: allocation._id.toString() },
     entityId: asset._id.toString(),
   });
 
@@ -138,6 +143,11 @@ router.patch('/:id/return', protect, async (req, res) => {
         title: 'Asset return requested',
         message: `${allocation.asset.assetId} return requested by ${req.user.name}`,
         type: 'info',
+        category: 'overdue_return',
+        module: 'allocations',
+        assetTag: allocation.asset.assetId,
+        triggeredBy: req.user._id,
+        metadata: { allocationId: allocation._id.toString() },
         entityId: allocation.asset._id.toString(),
       });
     }
@@ -271,6 +281,11 @@ router.patch('/transfer-requests/:id/approve', protect, async (req, res) => {
     title: 'Transfer approved',
     message: `Your transfer for ${asset.assetId} was approved`,
     type: 'success',
+    category: 'transfer_approved',
+    module: 'allocations',
+    assetTag: asset.assetId,
+    triggeredBy: req.user._id,
+    metadata: { transferRequestId: request._id.toString() },
     entityId: request.asset.toString(),
   });
 
@@ -309,6 +324,11 @@ router.patch('/transfer-requests/:id/reject', protect, async (req, res) => {
     title: 'Transfer rejected',
     message: 'Your transfer request was rejected',
     type: 'warning',
+    category: 'system_alert',
+    module: 'allocations',
+    assetTag: asset.assetId,
+    triggeredBy: req.user._id,
+    metadata: { transferRequestId: request._id.toString() },
     entityId: request.asset.toString(),
   });
 

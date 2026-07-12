@@ -16,6 +16,7 @@ import maintenanceRoutes from './routes/maintenance.js';
 import auditRoutes from './routes/audits.js';
 import reportRoutes from './routes/reports.js';
 import notificationRoutes from './routes/notifications.js';
+import activityLogRoutes from './routes/activityLogs.js';
 import uploadRoutes from './routes/upload.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
@@ -53,6 +54,7 @@ app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/audits', auditRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/upload', uploadRoutes);
 
 app.use(notFound);

@@ -1,5 +1,17 @@
+import axios from 'axios';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', '');
+
+const notificationClient = axios.create({ baseURL: API_URL });
+
+notificationClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('assetflow_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 const request = async (path, options = {}) => {
   const token = localStorage.getItem('assetflow_token');
@@ -27,6 +39,19 @@ const request = async (path, options = {}) => {
   }
 
   return data;
+};
+
+const notificationRequest = async (path, options = {}) => {
+  try {
+    const response = await notificationClient.request({ url: path, ...options });
+    return response.data;
+  } catch (error) {
+    const data = error.response?.data || {};
+    const wrapped = new Error(data.message || error.message || 'Request failed');
+    wrapped.status = error.response?.status;
+    wrapped.field = data.field;
+    throw wrapped;
+  }
 };
 
 export const api = {
@@ -86,9 +111,11 @@ export const api = {
   getAuditProgress: () => request('/audits/progress/summary'),
   closeAuditCycle: (cycleId) => request(`/audits/${cycleId}/close`, { method: 'PATCH' }),
   reports: () => request('/reports/summary'),
-  notifications: () => request('/notifications'),
-  readNotification: (id) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
-  readAllNotifications: () => request('/notifications/read-all', { method: 'PATCH' }),
+  notifications: (params = {}) => notificationRequest('/notifications', { method: 'GET', params }),
+  notificationById: (id) => notificationRequest(`/notifications/${id}`, { method: 'GET' }),
+  readNotification: (id) => notificationRequest(`/notifications/${id}/read`, { method: 'PATCH' }),
+  readAllNotifications: () => notificationRequest('/notifications/read-all', { method: 'PATCH' }),
+  activityLogs: (params = {}) => notificationRequest('/activity-logs', { method: 'GET', params }),
 };
 
 export { BASE_URL };
