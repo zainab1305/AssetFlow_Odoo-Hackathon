@@ -78,6 +78,8 @@ export const api = {
   resolveMaintenance: (id, payload = {}) => request(`/maintenance/${id}/resolve`, { method: 'PATCH', body: JSON.stringify(payload) }),
   audits: () => request('/audits'),
   createAudit: (payload) => request('/audits', { method: 'POST', body: JSON.stringify(payload) }),
+  addAuditItem: (cycleId, payload) => request(`/audits/${cycleId}/items`, { method: 'POST', body: JSON.stringify(payload) }),
+  updateAuditItem: (itemId, payload) => request(`/audits/items/${itemId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   getAuditCycle: (id) => request(`/audits/${id}`),
   verifyAuditItem: (itemId, payload) => request(`/audits/verify/${itemId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   getAuditDiscrepancies: (cycleId) => request(`/audits/${cycleId}/discrepancies`),

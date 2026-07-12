@@ -19,7 +19,7 @@ const canViewCycle = (user, cycle) => {
 };
 
 // POST /api/audits - Create a new audit cycle
-router.post('/', protect, allowRoles('Admin', 'Asset Manager'), async (req, res) => {
+router.post('/', protect, allowRoles('Admin'), async (req, res) => {
   try {
     const { name, scopeType, scopeValue, startDate, endDate, assignedAuditors } = req.body;
 
@@ -148,6 +148,68 @@ router.get('/', protect, async (req, res) => {
     );
 
     res.json(cyclesWithProgress);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST /api/audits/:id/items - Add an asset to an audit cycle
+router.post('/:id/items', protect, allowRoles('Admin'), async (req, res) => {
+  try {
+    const { assetId } = req.body;
+    if (!assetId) return res.status(400).json({ message: 'Asset is required' });
+
+    const cycle = await AuditCycle.findById(req.params.id);
+    if (!cycle) return res.status(404).json({ message: 'Audit cycle not found' });
+    if (cycle.status !== 'InProgress') return res.status(400).json({ message: 'Only in-progress audit cycles can be updated' });
+
+    const existingItem = await AuditItem.findOne({ auditCycle: cycle._id, asset: assetId });
+    if (existingItem) return res.status(409).json({ message: 'This asset is already included in the audit cycle' });
+
+    const asset = await Asset.findById(assetId);
+    if (!asset) return res.status(404).json({ message: 'Asset not found' });
+
+    const item = await AuditItem.create({
+      asset: asset._id,
+      auditCycle: cycle._id,
+      verificationStatus: 'Pending',
+    });
+
+    const itemCount = await AuditItem.countDocuments({ auditCycle: cycle._id });
+    cycle.includedAssetCount = itemCount;
+    await cycle.save();
+
+    const populatedItem = await item.populate('asset', 'assetId name category location');
+    res.status(201).json(populatedItem);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// PATCH /api/audits/items/:itemId - Replace the asset linked to an audit item
+router.patch('/items/:itemId', protect, allowRoles('Admin'), async (req, res) => {
+  try {
+    const { assetId } = req.body;
+    if (!assetId) return res.status(400).json({ message: 'Asset is required' });
+
+    const item = await AuditItem.findById(req.params.itemId);
+    if (!item) return res.status(404).json({ message: 'Audit item not found' });
+
+    const cycle = await AuditCycle.findById(item.auditCycle);
+    if (!cycle) return res.status(404).json({ message: 'Audit cycle not found' });
+    if (cycle.status !== 'InProgress') return res.status(400).json({ message: 'Only in-progress audit cycles can be updated' });
+
+    const duplicateItem = await AuditItem.findOne({ auditCycle: cycle._id, asset: assetId, _id: { $ne: item._id } });
+    if (duplicateItem) return res.status(409).json({ message: 'This asset is already included in the audit cycle' });
+
+    const asset = await Asset.findById(assetId);
+    if (!asset) return res.status(404).json({ message: 'Asset not found' });
+
+    item.asset = asset._id;
+    await item.save();
+
+    const populatedItem = await item.populate('asset', 'assetId name category location');
+    res.json(populatedItem);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -285,7 +347,7 @@ router.get('/progress/summary', protect, allowRoles('Admin', 'Asset Manager'), a
 });
 
 // PATCH /api/audits/:id/close - Close audit cycle
-router.patch('/:id/close', protect, allowRoles('Admin', 'Asset Manager'), async (req, res) => {
+router.patch('/:id/close', protect, allowRoles('Admin'), async (req, res) => {
   try {
     const cycle = await AuditCycle.findById(req.params.id);
     if (!cycle) return res.status(404).json({ message: 'Audit cycle not found' });

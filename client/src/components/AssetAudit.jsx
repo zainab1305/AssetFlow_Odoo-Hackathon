@@ -23,6 +23,9 @@ const AssetAudit = () => {
     endDate: '',
     assignedAuditors: [],
   });
+  const [assetModalOpen, setAssetModalOpen] = useState(false);
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [assetSelection, setAssetSelection] = useState('');
   const [verifyForm, setVerifyForm] = useState({
     itemId: '',
     verificationStatus: 'Verified',
@@ -44,6 +47,12 @@ const AssetAudit = () => {
   const { data: employees = [] } = useQuery({
     queryKey: ['employees'],
     queryFn: () => api.employees(),
+  });
+
+  const { data: assets = [] } = useQuery({
+    queryKey: ['assets'],
+    queryFn: () => api.assets(),
+    enabled: Boolean(user),
   });
 
   const { data: cycleDetail = null } = useQuery({
@@ -76,6 +85,36 @@ const AssetAudit = () => {
     },
     onError: (error) => {
       setToast({ message: error.message || 'Failed to create audit cycle', type: 'error' });
+    },
+  });
+
+  const addAuditItemMutation = useMutation({
+    mutationFn: ({ cycleId, assetId }) => api.addAuditItem(cycleId, { assetId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auditCycle'] });
+      queryClient.invalidateQueries({ queryKey: ['auditCycles'] });
+      setToast({ message: 'Asset added to the audit cycle', type: 'success' });
+      setAssetModalOpen(false);
+      setEditingItemId(null);
+      setAssetSelection('');
+    },
+    onError: (error) => {
+      setToast({ message: error.message || 'Failed to add asset to audit cycle', type: 'error' });
+    },
+  });
+
+  const updateAuditItemMutation = useMutation({
+    mutationFn: ({ itemId, assetId }) => api.updateAuditItem(itemId, { assetId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auditCycle'] });
+      queryClient.invalidateQueries({ queryKey: ['auditCycles'] });
+      setToast({ message: 'Audit asset updated', type: 'success' });
+      setAssetModalOpen(false);
+      setEditingItemId(null);
+      setAssetSelection('');
+    },
+    onError: (error) => {
+      setToast({ message: error.message || 'Failed to update audit asset', type: 'error' });
     },
   });
 
@@ -112,7 +151,8 @@ const AssetAudit = () => {
   });
 
   // Helper functions
-  const canCreateAudit = () => ['Admin', 'Asset Manager'].includes(user?.role);
+  const canManageAuditCycles = () => ['Admin', 'Asset Manager'].includes(user?.role);
+  const canManageAuditAssets = () => user?.role === 'Admin';
   const canViewAllCycles = () => ['Admin', 'Asset Manager'].includes(user?.role);
   const isAuditor = () => user?.role === 'Auditor';
 
@@ -124,6 +164,55 @@ const AssetAudit = () => {
   }, [cycles, user]);
 
   const displayCycles = canViewAllCycles() ? cycles : myAssignedCycles;
+
+  const assetOptionsForSelection = useMemo(() => {
+    const existingAssetIds = new Set(
+      (cycleDetail?.items || [])
+        .map((item) => {
+          if (typeof item.asset === 'string') return item.asset;
+          return item.asset?._id;
+        })
+        .filter(Boolean)
+    );
+
+    const currentAssetId = editingItemId
+      ? (cycleDetail?.items?.find((item) => item._id === editingItemId)?.asset?._id ||
+          cycleDetail?.items?.find((item) => item._id === editingItemId)?.asset)
+      : null;
+
+    return assets.filter((asset) => {
+      if (asset.status !== 'Available') return false;
+      return asset._id === currentAssetId || !existingAssetIds.has(asset._id);
+    });
+  }, [assets, cycleDetail?.items, editingItemId]);
+
+  const openAddAssetModal = () => {
+    setEditingItemId(null);
+    setAssetSelection('');
+    setAssetModalOpen(true);
+  };
+
+  const openEditAssetModal = (item) => {
+    const assetId = typeof item.asset === 'string' ? item.asset : item.asset?._id;
+    setEditingItemId(item._id);
+    setAssetSelection(assetId || '');
+    setAssetModalOpen(true);
+  };
+
+  const handleAssetSubmit = (e) => {
+    e.preventDefault();
+
+    if (!assetSelection) {
+      setToast({ message: 'Please select an asset', type: 'error' });
+      return;
+    }
+
+    if (editingItemId) {
+      updateAuditItemMutation.mutate({ itemId: editingItemId, assetId: assetSelection });
+    } else {
+      addAuditItemMutation.mutate({ cycleId: selectedCycle?._id, assetId: assetSelection });
+    }
+  };
 
   const handleCreateSubmit = (e) => {
     e.preventDefault();
@@ -241,10 +330,12 @@ const AssetAudit = () => {
             title="Audit Cycles"
             subtitle="Create and manage asset audit cycles"
             action={
-              <Button variant="accent" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Create Cycle
-              </Button>
+              canManageAuditCycles() ? (
+                <Button variant="accent" onClick={() => setCreateOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  Create Cycle
+                </Button>
+              ) : null
             }
           >
             <div className="space-y-3">
@@ -501,6 +592,14 @@ const AssetAudit = () => {
                 </div>
               </div>
 
+              {canManageAuditAssets() && (
+                <div className="flex justify-end">
+                  <Button variant="accent" onClick={openAddAssetModal}>
+                    Add Asset
+                  </Button>
+                </div>
+              )}
+
               {/* Checklist Table */}
               <div className="rounded-2xl border border-slate-200 overflow-hidden">
                 <table className="w-full text-sm">
@@ -511,6 +610,7 @@ const AssetAudit = () => {
                       <th className="px-4 py-3 text-left font-semibold text-slate-900">Status</th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-900">Verified By</th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-900">Remarks</th>
+                      {canManageAuditAssets() && <th className="px-4 py-3 text-left font-semibold text-slate-900">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -524,6 +624,13 @@ const AssetAudit = () => {
                           </td>
                           <td className="px-4 py-3 text-slate-600">{item.verifiedBy?.name || '—'}</td>
                           <td className="px-4 py-3 text-slate-600 truncate">{item.remarks || '—'}</td>
+                          {canManageAuditAssets() && (
+                            <td className="px-4 py-3">
+                              <Button variant="outline" onClick={() => openEditAssetModal(item)}>
+                                Edit
+                              </Button>
+                            </td>
+                          )}
                         </tr>
                       ))
                     ) : (
@@ -537,8 +644,8 @@ const AssetAudit = () => {
                 </table>
               </div>
 
-              {/* Close Button (only if no pending) */}
-              {selectedCycle.status === 'InProgress' && (
+              {/* Close Button (only if no pending and admin-managed) */}
+              {selectedCycle.status === 'InProgress' && canManageAuditCycles() && (
                 <Button
                   variant="primary"
                   onClick={() => closeAuditMutation.mutate(selectedCycle._id)}
@@ -550,6 +657,29 @@ const AssetAudit = () => {
             </div>
           </Modal>
         )}
+
+        <Modal open={assetModalOpen} onClose={() => setAssetModalOpen(false)} title={editingItemId ? 'Edit Audit Asset' : 'Add Asset to Audit Cycle'}>
+          <form className="space-y-4" onSubmit={handleAssetSubmit}>
+            <Field label={editingItemId ? 'Replace the asset in this audit cycle' : 'Select an asset to add to the audit cycle'}>
+              <Select value={assetSelection} onChange={(e) => setAssetSelection(e.target.value)}>
+                <option value="">Select asset...</option>
+                {assetOptionsForSelection.map((asset) => (
+                  <option key={asset._id} value={asset._id}>
+                    {asset.assetId} - {asset.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <div className="flex gap-2 pt-2">
+              <Button variant="primary" type="submit" disabled={addAuditItemMutation.isPending || updateAuditItemMutation.isPending}>
+                {editingItemId ? 'Save Changes' : 'Add Asset'}
+              </Button>
+              <Button variant="outline" type="button" onClick={() => setAssetModalOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </Modal>
       </div>
     );
   }

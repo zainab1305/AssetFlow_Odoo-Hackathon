@@ -39,7 +39,14 @@ export default function App() {
         <Route path="/allocations" element={<Allocations />} />
         <Route path="/bookings" element={<Bookings />} />
         <Route path="/maintenance" element={<Maintenance />} />
-        <Route path="/audits" element={<Audits />} />
+        <Route
+          path="/audits"
+          element={
+            <ProtectedRoute roles={['Admin', 'Asset Manager', 'Auditor']}>
+              <Audits />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/reports" element={<Reports />} />
         <Route path="/notifications" element={<Notifications />} />
       </Route>

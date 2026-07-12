@@ -27,7 +27,12 @@ export const Layout = () => {
   const [open, setOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
-  const navItemsForUser = navItems.filter((item) => item.to !== '/organization' || user?.role === 'Admin');
+  const canViewAuditModule = ['Admin', 'Asset Manager', 'Auditor'].includes(user?.role);
+  const navItemsForUser = navItems.filter((item) => {
+    if (item.to === '/organization') return user?.role === 'Admin';
+    if (item.to === '/audits') return canViewAuditModule;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-hero-radial text-slate-900">
