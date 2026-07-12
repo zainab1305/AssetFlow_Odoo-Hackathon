@@ -18,12 +18,19 @@ router.get('/', protect, async (req, res) => {
   res.json(allocations);
 });
 
+router.get('/:assetId/history', protect, async (req, res) => {
+  const asset = await Asset.findById(req.params.assetId).populate('history.by', 'name email role');
+  if (!asset) return res.status(404).json({ message: 'Asset not found' });
+  res.json(asset.history || []);
+});
+
 router.post('/', protect, allowRoles('Admin', 'Asset Manager', 'Department Head'), async (req, res) => {
-  const { assetId, allocatedTo, department, type = 'Employee', remarks = '' } = req.body;
+  const { assetId, allocatedTo, department, type = 'Employee', remarks = '', expectedReturnDate } = req.body;
   const asset = await Asset.findById(assetId);
   if (!asset) return res.status(404).json({ message: 'Asset not found' });
   if (asset.status === 'Allocated') {
-    return res.status(400).json({ message: 'Asset already allocated' });
+    const holder = asset.assignedTo ? await req.app.locals?.User?.findById?.(asset.assignedTo).select('name') : null;
+    return res.status(409).json({ message: 'Asset currently held by another user', currentHolder: holder || null });
   }
 
   const allocation = await Allocation.create({
@@ -33,6 +40,7 @@ router.post('/', protect, allowRoles('Admin', 'Asset Manager', 'Department Head'
     department: department || null,
     type,
     remarks,
+    expectedReturnDate: expectedReturnDate ? new Date(expectedReturnDate) : null,
   });
 
   asset.status = 'Allocated';
@@ -53,7 +61,8 @@ router.post('/', protect, allowRoles('Admin', 'Asset Manager', 'Department Head'
   res.status(201).json(allocation);
 });
 
-router.post('/:id/return', protect, allowRoles('Admin', 'Asset Manager', 'Department Head'), async (req, res) => {
+router.patch('/:id/return', protect, allowRoles('Admin', 'Asset Manager', 'Department Head'), async (req, res) => {
+  const { condition = 'Good', notes = '' } = req.body;
   const allocation = await Allocation.findById(req.params.id).populate('asset');
   if (!allocation || allocation.status !== 'Active') {
     return res.status(400).json({ message: 'Allocation not active' });
@@ -61,12 +70,14 @@ router.post('/:id/return', protect, allowRoles('Admin', 'Asset Manager', 'Depart
 
   allocation.status = 'Returned';
   allocation.returnedAt = new Date();
+  allocation.conditionOnReturn = condition;
+  allocation.checkInNotes = notes;
   await allocation.save();
 
   const asset = await Asset.findById(allocation.asset._id);
   asset.status = 'Available';
   asset.assignedTo = null;
-  asset.history.unshift({ action: 'Returned', note: 'Asset returned', by: req.user._id });
+  asset.history.unshift({ action: 'Returned', note: notes || 'Asset returned', by: req.user._id });
   await asset.save();
 
   await logActivity({ title: 'Asset returned', detail: `${asset.assetId} returned`, type: 'allocation', user: req.user._id });
@@ -74,7 +85,7 @@ router.post('/:id/return', protect, allowRoles('Admin', 'Asset Manager', 'Depart
 });
 
 router.post('/transfer-request', protect, allowRoles('Admin', 'Asset Manager', 'Department Head', 'Employee'), async (req, res) => {
-  const { assetId, fromUser, toUser, note = '' } = req.body;
+  const { assetId, fromUser, toUser, note = '', reason = '', targetDepartment = '' } = req.body;
   const asset = await Asset.findById(assetId);
   if (!asset) return res.status(404).json({ message: 'Asset not found' });
 
@@ -83,7 +94,10 @@ router.post('/transfer-request', protect, allowRoles('Admin', 'Asset Manager', '
     requestedBy: req.user._id,
     fromUser,
     toUser,
-    note,
+    note: note || reason,
+    reason,
+    targetDepartment,
+    status: 'Requested',
   });
 
   res.status(201).json(request);
@@ -97,10 +111,35 @@ router.get('/transfer-requests', protect, async (req, res) => {
 });
 
 router.patch('/transfer-requests/:id/approve', protect, allowRoles('Admin', 'Asset Manager', 'Department Head'), async (req, res) => {
-  const request = await TransferRequest.findByIdAndUpdate(req.params.id, { status: 'Approved' }, { new: true });
+  const request = await TransferRequest.findById(req.params.id);
   if (!request) return res.status(404).json({ message: 'Request not found' });
 
-  await Asset.findByIdAndUpdate(request.asset, { assignedTo: request.toUser });
+  request.status = 'Approved';
+  request.decidedBy = req.user._id;
+  request.decidedDate = new Date();
+  await request.save();
+
+  const existingAllocation = await Allocation.findOne({ asset: request.asset, status: 'Active' });
+  if (existingAllocation) {
+    existingAllocation.status = 'Returned';
+    existingAllocation.returnedAt = new Date();
+    await existingAllocation.save();
+  }
+
+  const allocation = await Allocation.create({
+    asset: request.asset,
+    allocatedTo: request.toUser,
+    allocatedBy: req.user._id,
+    status: 'Active',
+    type: 'Employee',
+  });
+
+  const asset = await Asset.findById(request.asset);
+  asset.status = 'Allocated';
+  asset.assignedTo = request.toUser;
+  asset.history.unshift({ action: 'Transfer approved', note: 'Transfer request approved', by: req.user._id });
+  await asset.save();
+
   await Notification.create({
     user: request.toUser,
     title: 'Transfer approved',
@@ -109,11 +148,24 @@ router.patch('/transfer-requests/:id/approve', protect, allowRoles('Admin', 'Ass
     entityId: request.asset.toString(),
   });
 
-  res.json(request);
+  await logActivity({ title: 'Transfer approved', detail: `${asset.assetId} transferred`, type: 'allocation', user: req.user._id });
+  res.json({ ...request.toObject(), allocation });
 });
 
 router.patch('/transfer-requests/:id/reject', protect, allowRoles('Admin', 'Asset Manager', 'Department Head'), async (req, res) => {
-  const request = await TransferRequest.findByIdAndUpdate(req.params.id, { status: 'Rejected' }, { new: true });
+  const request = await TransferRequest.findById(req.params.id);
+  if (!request) return res.status(404).json({ message: 'Request not found' });
+  request.status = 'Rejected';
+  request.decidedBy = req.user._id;
+  request.decidedDate = new Date();
+  await request.save();
+  await Notification.create({
+    user: request.requestedBy,
+    title: 'Transfer rejected',
+    message: 'Your transfer request was rejected',
+    type: 'warning',
+    entityId: request.asset.toString(),
+  });
   res.json(request);
 });
 
