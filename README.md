@@ -16,10 +16,13 @@ Enterprise Asset & Resource Management System built for the hackathon using the 
 - Sample data seed script
 
 ## Run
-1. Install dependencies: `npm install`
-2. Set `server/.env`
-3. Start backend: `npm run dev:server`
-4. Start frontend: `npm run dev:client`
+1. Install dependencies from the repo root: `npm install`
+2. Create `server/.env`
+3. Start both backend and frontend together: `npm run dev`
+
+Alternatively, start them separately from the root:
+- Backend only: `npm run dev:server`
+- Frontend only: `npm run dev:client`
 
 ## Environment
 Create `server/.env` with:
