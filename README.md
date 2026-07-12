@@ -165,6 +165,22 @@ The frontend runs at `http://localhost:5173` and the backend API at `http://loca
 
 ---
 
+---
+
+## Test Credentials
+
+The application comes with pre-seeded demo accounts for different roles.
+
+| Role | Email | Password |
+|------|-------|----------|
+| **Admin** | `admin@assetflow.com` | `password123` |
+| **Asset Manager** | `tuser@gmail.com` | `123456` |
+| **Employee** | `s123@gmail.com` | `123456` |
+
+> **Note:** These credentials are available after running the database seed script (`npm run seed`).
+
+---
+
 ## Design Reference
 
 Mockup / POC: [Excalidraw board](https://app.excalidraw.com/l/65VNwvy7c4X/5ceOBMjbDby)
