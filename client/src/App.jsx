@@ -27,7 +27,14 @@ export default function App() {
       >
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/organization" element={<Organization />} />
+        <Route
+          path="/organization"
+          element={
+            <ProtectedRoute roles={['Admin']}>
+              <Organization />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/assets" element={<Assets />} />
         <Route path="/allocations" element={<Allocations />} />
         <Route path="/bookings" element={<Bookings />} />

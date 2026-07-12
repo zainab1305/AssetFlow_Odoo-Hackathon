@@ -22,6 +22,7 @@ router.post('/signup', async (req, res) => {
       password,
       department: department || null,
       role: 'Employee',
+      status: 'Active',
       employeeId: `EMP-${Date.now().toString().slice(-6)}`,
     });
 
@@ -53,6 +54,9 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email }).populate('department');
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
+    }
+    if (user.status === 'Inactive') {
+      return res.status(403).json({ message: 'Your account is inactive' });
     }
 
     const valid = await user.matchPassword(password);

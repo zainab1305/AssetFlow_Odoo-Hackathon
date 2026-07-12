@@ -28,29 +28,29 @@ const seed = async () => {
   ]);
 
   const departments = await Department.insertMany([
-    { name: 'Engineering' },
-    { name: 'Facilities' },
-    { name: 'Finance' },
-    { name: 'Operations' },
+    { name: 'Engineering', status: 'Active' },
+    { name: 'Facilities', status: 'Active' },
+    { name: 'Finance', status: 'Active' },
+    { name: 'Operations', status: 'Inactive', parentDepartment: null },
   ]);
 
   const categories = await Category.insertMany([
-    { name: 'Laptops', type: 'Asset', department: departments[0]._id },
-    { name: 'Projectors', type: 'Asset', department: departments[1]._id },
-    { name: 'Office Furniture', type: 'Asset', department: departments[1]._id },
-    { name: 'Meeting Room', type: 'Resource', department: departments[1]._id },
-    { name: 'Vehicle', type: 'Resource', department: departments[3]._id },
+    { name: 'Electronics', type: 'Asset', customFields: { warrantyPeriodMonths: 24, maintenanceCycleMonths: 12, notes: 'Devices and peripherals' }, status: 'Active' },
+    { name: 'Furniture', type: 'Asset', customFields: { warrantyPeriodMonths: 12, maintenanceCycleMonths: 24, notes: 'Office furniture and seating' }, status: 'Active' },
+    { name: 'Vehicles', type: 'Resource', customFields: { warrantyPeriodMonths: 36, maintenanceCycleMonths: 6, notes: 'Company fleet and transport' }, status: 'Active' },
+    { name: 'Meeting Room', type: 'Resource', customFields: { maintenanceCycleMonths: 3, notes: 'Shared meeting spaces' }, status: 'Active' },
   ]);
 
   const seededUsers = [
-    { name: 'Amina Khan', email: 'admin@assetflow.com', password: 'password123', role: 'Admin', employeeId: 'EMP-0001' },
-    { name: 'Irfan Shah', email: 'manager@assetflow.com', password: 'password123', role: 'Asset Manager', employeeId: 'EMP-0002' },
+    { name: 'Amina Khan', email: 'admin@assetflow.com', password: 'password123', role: 'Admin', status: 'Active', employeeId: 'EMP-0001' },
+    { name: 'Irfan Shah', email: 'manager@assetflow.com', password: 'password123', role: 'Asset Manager', status: 'Active', employeeId: 'EMP-0002' },
     {
       name: 'Priya Shah',
       email: 'priya@assetflow.com',
       password: 'password123',
       role: 'Department Head',
       department: departments[0]._id,
+      status: 'Active',
       employeeId: 'EMP-0003',
     },
     {
@@ -59,6 +59,7 @@ const seed = async () => {
       password: 'password123',
       role: 'Employee',
       department: departments[0]._id,
+      status: 'Active',
       employeeId: 'EMP-0004',
     },
   ];
@@ -71,6 +72,7 @@ const seed = async () => {
       user.password = userData.password;
       user.role = userData.role;
       user.department = userData.department || null;
+      user.status = userData.status || 'Active';
       user.employeeId = userData.employeeId;
       await user.save();
       users.push(user);
@@ -79,7 +81,7 @@ const seed = async () => {
     users.push(await User.create(userData));
   }
 
-  await Department.findByIdAndUpdate(departments[0]._id, { head: users[2]._id });
+  await Department.findByIdAndUpdate(departments[0]._id, { head: users[2]._id, parentDepartment: null, status: 'Active' });
 
   const assets = await Asset.create([
     {

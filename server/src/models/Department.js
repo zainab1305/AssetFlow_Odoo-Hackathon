@@ -4,6 +4,7 @@ const departmentSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, unique: true },
     head: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    parentDepartment: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', default: null },
     status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
   },
   { timestamps: true }

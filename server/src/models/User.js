@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     },
     department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', default: null },
     employeeId: { type: String, default: '' },
+    status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
   },
   { timestamps: true }
 );

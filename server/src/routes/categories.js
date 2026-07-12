@@ -4,7 +4,7 @@ import { protect, allowRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.use(protect, allowRoles('Admin', 'Asset Manager'));
+router.use(protect, allowRoles('Admin'));
 
 router.get('/', async (req, res) => {
   const categories = await Category.find().populate('department', 'name');
@@ -13,11 +13,18 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const category = await Category.create(req.body);
-  res.status(201).json(category);
+  const populated = await Category.findById(category._id).populate('department', 'name');
+  res.status(201).json(populated);
 });
 
 router.put('/:id', async (req, res) => {
-  const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).populate('department', 'name');
+  res.json(category);
+});
+
+router.patch('/:id/status', async (req, res) => {
+  const { status } = req.body;
+  const category = await Category.findByIdAndUpdate(req.params.id, { status }, { new: true, runValidators: true }).populate('department', 'name');
   res.json(category);
 });
 

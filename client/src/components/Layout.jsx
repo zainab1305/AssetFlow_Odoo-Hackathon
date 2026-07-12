@@ -27,6 +27,7 @@ export const Layout = () => {
   const [open, setOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navItemsForUser = navItems.filter((item) => item.to !== '/organization' || user?.role === 'Admin');
 
   return (
     <div className="min-h-screen bg-hero-radial text-slate-900">
@@ -45,7 +46,7 @@ export const Layout = () => {
               </div>
             </div>
             <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4 scrollbar-thin">
-              {navItems.map((item) => {
+              {navItemsForUser.map((item) => {
                 const Icon = item.icon;
                 return (
                   <NavLink
